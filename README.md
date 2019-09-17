@@ -1,6 +1,12 @@
 # Eventhus
 CQRS/ES toolkit for Go.
 
+---
+
+**This is a fork of [mishudark/eventhus](https://github.com/mishudark/eventhus).** It was created to implement a mocked API and is currently not intended be arround for long. That may change depending on the activity in mishudark/eventhus.
+
+---
+
 **CQRS** stands for Command Query Responsibility Segregation. It's a pattern that I first heard described by Greg Young. At its heart is the notion that you can use a different model to update information than the model you use to read information.
 
 The mainstream approach people use for interacting with an information system is to treat it as a CRUD datastore. By this I mean that we have mental model of some record structure where we can create new records, read records, update existing records, and delete records when we're done with them. In the simplest case, our interactions are all about storing and retrieving these records.
