@@ -1,12 +1,12 @@
 package mongo
 
 import (
-	"github.com/mishudark/eventhus"
+	"context"
 	"fmt"
-	"time"
-
+	"github.com/mishudark/eventhus"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
+	"time"
 )
 
 //AggregateDB defines the collection to store the aggregate with their events
@@ -51,7 +51,7 @@ func NewClient(host string, port int, db string) (eventhus.EventStore, error) {
 	return cli, nil
 }
 
-func (c *Client) save(events []eventhus.Event, version int, safe bool) error {
+func (c *Client) save(ctx context.Context, events []eventhus.Event, version int, safe bool) error {
 	if len(events) == 0 {
 		return nil
 	}
@@ -64,6 +64,7 @@ func (c *Client) save(events []eventhus.Event, version int, safe bool) error {
 	eventsDB := make([]EventDB, len(events))
 	aggregateID := events[0].AggregateID
 
+	// TODO Check context?
 	for i, event := range events {
 
 		// Create the event record with timestamp.
@@ -84,6 +85,8 @@ func (c *Client) save(events []eventhus.Event, version int, safe bool) error {
 			eventsDB[i].RawData = bson.Raw{Kind: 3, Data: rawData}
 		}
 	}
+
+	// TODO Check context?
 
 	// Either insert a new aggregate or append to an existing.
 	if version == 0 {
@@ -118,18 +121,25 @@ func (c *Client) save(events []eventhus.Event, version int, safe bool) error {
 	return nil
 }
 
+func (c *Client) SafeSaveWithContext(ctx context.Context, events []eventhus.Event, version int) error {
+	return c.save(ctx, events, version, true)
+}
+
 //SafeSave store the events without check the current version
 func (c *Client) SafeSave(events []eventhus.Event, version int) error {
-	return c.save(events, version, true)
+	return c.SafeSaveWithContext(context.Background(), events, version)
+}
+
+func (c *Client) SaveWithContext(ctx context.Context, events []eventhus.Event, version int) error {
+	return c.save(ctx, events, version, false)
 }
 
 //Save the events ensuring the current version
 func (c *Client) Save(events []eventhus.Event, version int) error {
-	return c.save(events, version, false)
+	return c.SaveWithContext(context.Background(), events, version)
 }
 
-//Load the stored events for an AggregateID
-func (c *Client) Load(aggregateID string) ([]eventhus.Event, error) {
+func (c *Client) LoadWithContext(ctx context.Context, aggregateID string) ([]eventhus.Event, error) {
 	var events []eventhus.Event
 
 	sess := c.session.Copy()
@@ -173,4 +183,9 @@ func (c *Client) Load(aggregateID string) ([]eventhus.Event, error) {
 	}
 
 	return events, nil
+}
+
+//Load the stored events for an AggregateID
+func (c *Client) Load(aggregateID string) ([]eventhus.Event, error) {
+	return c.LoadWithContext(context.Background(), aggregateID)
 }
